@@ -15,16 +15,20 @@ services:
     image: haugene/transmission-openvpn
     container_name: transmission-openvpn
     restart: always
+    cap_add:
+      - ALL
     ports:
       - "9091:9091"
     networks:
       - plexnet
     environment:
+      - PGID=1000
+      - PUID=1000
       - OPENVPN_PROVIDER=${VPN_PROVIDER}
-      - OPENVPN_CONFIG=${VPN_CONFIG}
+      #- OPENVPN_CONFIG=${VPN_CONFIG}
       - OPENVPN_USERNAME=${VPN_USERNAME}
       - OPENVPN_PASSWORD=${VPN_PASSWORD}
-      - OPENVPN_OPTS="--inactive 3600 --ping 10 --ping-exit 60"
+      #- 'OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60'
     volumes:
       - ${MOUNT_POINT}/transmission:/data
       - /etc/localtime:/etc/localtime:ro
@@ -34,6 +38,9 @@ services:
     restart: always
     ports:
       - "7878:7878"
+    depends_on:
+      - "transmission"
+      - "jackett"
     networks:
       - plexnet
     environment:
@@ -50,6 +57,9 @@ services:
     restart: always
     ports:
       - "8989:8989"
+    depends_on:
+      - "transmission"
+      - "jackett"
     networks:
       - plexnet
     environment:
@@ -76,7 +86,7 @@ services:
     ports:
       - "9117:9117"
   plex:
-    image: timhaak/plex
+    image: plexinc/pms-docker
     container_name: plex
     restart: always
     ports:
@@ -96,9 +106,38 @@ services:
       - PGID=1000
       - PUID=1000
       - TZ=Europe/London
+      - PLEX_CLAIM=${PLEX_CLAIM_ID}
     volumes:
-      - ${MOUNT_POINT}/plex-config:/config
+      - ${MOUNT_POINT}/plex/plex-config:/config
+      - ${MOUNT_POINT}/plex/transcode:/transcode 
       - ${MOUNT_POINT}/plex:/data
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - ${MOUNT_POINT}/bazarr/config:/config
+      - ${MOUNT_POINT}/plex/movies:/movies
+      - ${MOUNT_POINT}/plex/tv:/tv 
+    ports:
+      - 6767:6767
+    restart: always
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - ${MOUNT_POINT}/heimdall:/config
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
 networks:
   plexnet:
     driver: bridge
