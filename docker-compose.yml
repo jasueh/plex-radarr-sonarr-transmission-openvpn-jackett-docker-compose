@@ -12,6 +12,7 @@
 version: "2"
 
 services:
+  # Transmission with OpenVPN configured
   transmission:
     image: haugene/transmission-openvpn
     container_name: transmission-openvpn
@@ -34,6 +35,7 @@ services:
     volumes:
       - ${MOUNT_POINT}/transmission:/data
       - /etc/localtime:/etc/localtime:ro
+
   radarr:
     image: linuxserver/radarr
     container_name: radarr
@@ -72,14 +74,14 @@ services:
       - ${MOUNT_POINT}/sonarr/config:/config
       - ${MOUNT_POINT}/plex/tv:/tv
       - ${MOUNT_POINT}/transmission/completed:/downloads
+
+  # Jackett using the same OpenVPN connection that Transmission has.
   jackett:
     image: linuxserver/jackett
     container_name: jackett
     restart: always
     depends_on:
       - "transmission"
-#    networks:
-#      - plexnet
     network_mode: container:transmission-openvpn
     environment:
       - PGID=1000
@@ -130,6 +132,7 @@ services:
     ports:
       - 6767:6767
     restart: always
+
   heimdall:
     image: lscr.io/linuxserver/heimdall:latest
     container_name: heimdall
@@ -144,23 +147,6 @@ services:
       - 443:443
     restart: always
 
-  homeassistant:
-    image: lscr.io/linuxserver/homeassistant:latest
-    container_name: homeassistant
-    networks: 
-      - plexnet
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-    volumes:
-      - ${MOUNT_POINT}/homeassistant/config:/config
-    ports:
-      - 8123:8123 #optional
-    #devices:
-    #  - /path/to/device:/path/to/device #optional
-    restart: unless-stopped
-
   network-multitool:
     image: praqma/network-multitool
     container_name: network-multitool
@@ -173,6 +159,7 @@ services:
 #    networks:
 #      - plexnet
     network_mode: container:transmission-openvpn
+    restart: unless-stopped
 networks:
   plexnet:
     driver: bridge
