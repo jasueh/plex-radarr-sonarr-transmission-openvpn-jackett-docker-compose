@@ -121,6 +121,8 @@ services:
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
+    networks:
+      - plexnet
     environment:
       - PUID=1000
       - PGID=1000
@@ -133,19 +135,6 @@ services:
       - 6767:6767
     restart: always
 
-  heimdall:
-    image: lscr.io/linuxserver/heimdall:latest
-    container_name: heimdall
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-    volumes:
-      - ${MOUNT_POINT}/heimdall:/config
-    ports:
-      - 80:80
-      - 443:443
-    restart: always
 
   network-multitool:
     image: praqma/network-multitool
