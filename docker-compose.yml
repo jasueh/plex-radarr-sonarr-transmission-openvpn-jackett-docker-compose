@@ -23,6 +23,7 @@ services:
       - "9091:9091"
       - "9117:9117"
       - "8191:8191"
+      - "9696:9696"
     networks:
       - plexnet
     environment:
@@ -41,7 +42,7 @@ services:
       - ${MOUNT_POINT}/transmission:/data
       - ${MOUNT_POINT}/transmission/config:/conf
       - /etc/localtime:/etc/localtime:ro
-
+  # movies
   radarr:
     image: linuxserver/radarr
     container_name: radarr
@@ -50,7 +51,7 @@ services:
       - "7878:7878"
     depends_on:
       - "transmission"
-      - "jackett"
+    #  - "jackett"
     networks:
       - plexnet
     environment:
@@ -61,6 +62,7 @@ services:
       - ${MOUNT_POINT}/radarr-config:/config
       - ${MOUNT_POINT}/transmission/completed:/downloads
       - ${MOUNT_POINT}/plex/movies:/movies
+  #tvShows
   sonarr:
     image: linuxserver/sonarr
     container_name: sonarr
@@ -69,7 +71,7 @@ services:
       - "8989:8989"
     depends_on:
       - "transmission"
-      - "jackett"
+    #  - "jackett"
     networks:
       - plexnet
     environment:
@@ -80,24 +82,55 @@ services:
       - ${MOUNT_POINT}/sonarr/config:/config
       - ${MOUNT_POINT}/plex/tv:/tv
       - ${MOUNT_POINT}/transmission/completed:/downloads
-
+  #books
+  readarr:
+      image: lscr.io/linuxserver/readarr:develop
+      container_name: readarr
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/London
+      volumes:
+        - ${MOUNT_POINT}/readarr/config:/config
+        - ${MOUNT_POINT}/readarr/books:/books #optional
+        - ${MOUNT_POINT}/transmission/completed:/downloads #optional
+      ports:
+        - 8787:8787
+      restart: unless-stopped
   # Jackett using the same OpenVPN connection that Transmission has.
-  jackett:
-    image: linuxserver/jackett
-    container_name: jackett
-    restart: always
-    depends_on:
-      - "transmission"
-    network_mode: container:transmission-openvpn
-    environment:
-      - PGID=1000
-      - PUID=1000
-      - TZ=Europe/London
-    volumes:
-      - ${MOUNT_POINT}/jackett/config:/config
-      - ${MOUNT_POINT}/jackett/downloads:/downloads
+  # jackett:
+  #   image: linuxserver/jackett
+  #   container_name: jackett
+  #   restart: always
+  #   depends_on:
+  #     - "transmission"
+  #   network_mode: container:transmission-openvpn
+  #   environment:
+  #     - PGID=1000
+  #     - PUID=1000
+  #     - TZ=Europe/London
+  #   volumes:
+  #     - ${MOUNT_POINT}/jackett/config:/config
+  #     - ${MOUNT_POINT}/jackett/downloads:/downloads
   #  ports:
   #    - "9117:9117"
+
+  # Testing prowlarr using OpenVPN from Transmission
+  prowlarr:
+      image: lscr.io/linuxserver/prowlarr:latest
+      container_name: prowlarr
+      depends_on:
+        - "transmission"
+      network_mode: container:transmission-openvpn
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/London
+      volumes:
+        - ${MOUNT_POINT}/prowlarr/config:/config
+      restart: unless-stopped
+      #ports:
+      #  - 9696:9696
 
   flaresolverr:
     # DockerHub mirror flaresolverr/flaresolverr:latest
